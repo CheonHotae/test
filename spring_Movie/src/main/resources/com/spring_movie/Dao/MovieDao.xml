@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+  <mapper namespace="com.spring_movie.Dao.MovieDao">
+  		
+  		<select id="selectMovieList" resultType="com.spring.memberDto.MovieDto">
+  			SELECT MVCODE,MVNAME,MVPD,MVACTOR,MVGENRE,MVAGE,MVTIME,TO_CHAR(MVOPEN,'YYYY.MM.DD') AS MVOPEN , MVPOSTER 
+  			 FROM MOVIES 
+  			 ORDER BY MVCODE
+  			
+  		</select>
+  		
+  		<select id="selectView" resultType="com.spring.memberDto.MovieDto">
+  			SELECT MVCODE,MVNAME,MVPD,MVACTOR,MVGENRE,MVAGE,MVTIME,TO_CHAR(MVOPEN,'YYYY.MM.DD') AS MVOPEN , MVPOSTER 
+  			 FROM MOVIES 
+  			 WHERE MVCODE = #{mvcode}
+  			
+  		</select>
+  		
+  		
+  		<select id="selectReserveMvList" resultType="com.spring.memberDto.MovieDto">
+  				 SELECT *
+  				 FROM MOVIES 
+  				 WHERE MVCODE IN ( SELECT SCMVCODE FROM SCHEDULES  )
+  		
+  		</select>
+  		
+  		<select id="getThList"  resultType="com.spring.memberDto.TheatersDto">
+  				select THCODE,THNAME,THADDR,THTEL
+				from THEATERS 
+				where THCODE in (select SCTHCODE from schedules where SCMVCODE = #{mvcode}) 
+  		</select>
+  		
+  		
+  		<select id="getscDateList"  resultType="com.spring.memberDto.SchedulesDto">
+  				select SCROOM,TO_CHAR(SCDATE,'yyyy-mm-dd') as SCDATE ,SCTHCODE,SCMVCODE 
+				from schedules
+				where scmvcode = #{scmvcode} and scthcode = #{scthcode} 
+  		</select>
+  		
+  		<select id="getTimeRoom"  resultType="com.spring.memberDto.SchedulesDto">
+  				select SCROOM,TO_CHAR(SCDATE,'hh24:mi') as SCDATE ,SCTHCODE,SCMVCODE 
+				from schedules	
+				where scmvcode = #{scmvcode} and scthcode = #{scthcode} and to_char(scdate,'yyyy-mm-dd') = #{scdate}
+  		</select>
+  		
+  		
+  		<select id="getMaxRecode" resultType="String" >
+  		
+  			select max(RECODE) from RESERVATION
+  		</select>
+  		
+  		
+  		<select id="insertReservationInfo" resultType="com.spring.memberDto.ReservationDto" >
+  		
+  			INSERT INTO RESERVATION (RECODE, REMID,RESCTHCODE , RESCROOM,RESCDATE,REAMOUNT) 
+  			VALUES(#{recode},#{remid},#{rescthcode},#{rescroom},to_date(#{rescdate},'yyyy-mm-dd hh24:mi:ss'),#{reamount})
+  		</select>
+  		
+  		<select id="selectReservationList" resultType="com.spring.memberDto.ReserveInfoDto" >
+  			SELECT MV.MVCODE,RE.RECODE, MV.MVNAME, TH.THNAME, SC.SCROOM, RE.RESCDATE, RE.REAMOUNT , SC.SCDATE ,MV.MVPOSTER 
+			FROM RESERVATION RE, SCHEDULES SC, MOVIES MV, THEATERS TH
+			WHERE RE.RESCTHCODE = SC.SCTHCODE AND RE.RESCROOM = SC.SCROOM AND RE.RESCDATE = SC.SCDATE
+   			AND SC.SCMVCODE = MV.MVCODE
+  			AND SC.SCTHCODE = TH.THCODE
+   			AND RE.REMID = #{remid}
+  		
+  		</select>
+  		
+  		<select id="deleteReservation" >
+  			delete from RESERVATION where RECODE = #{recode}
+  		
+  		</select>
+  		
+  		
+  		<select id="selectResevationInfo" resultType="com.spring.memberDto.ReserveInfoDto" >
+  			SELECT MV.MVCODE,RE.RECODE, MV.MVNAME, TH.THNAME, SC.SCROOM, RE.RESCDATE, RE.REAMOUNT , SC.SCDATE ,MV.MVPOSTER 
+			FROM RESERVATION RE, SCHEDULES SC, MOVIES MV, THEATERS TH
+			WHERE RE.RESCTHCODE = SC.SCTHCODE AND RE.RESCROOM = SC.SCROOM AND RE.RESCDATE = SC.SCDATE
+   			AND SC.SCMVCODE = MV.MVCODE
+  			AND SC.SCTHCODE = TH.THCODE
+   			AND RE.RECODE = #{recode}
+  		
+  		</select>
+  		
+  	
+  		
+  		
+  		<select id="insertReview" resultType="com.spring.memberDto.ReviewDto">
+  			INSERT INTO REVIEW(RVRECODE, RVMID, RVMVCODE, RVCOMMENT, RVDATE, RVRECOMMEND) 
+  			VALUES(#{rvrecode}, #{rvmid}, #{rvmvcode}, #{rvcomment}, sysdate, #{rvrecommend})
+  		
+  		
+  		</select>
+  		
+  		
+  		<select id="selectReviewInfo"  resultType="com.spring.memberDto.ReviewDto">
+  			select RVRECODE,RVMID,RVMVCODE,RVCOMMENT,TO_CHAR(RVDATE,'YYYY-MM-DD HH24:MI') AS RVDATE , RVRECOMMEND
+  			from REVIEW
+  			where RVRECODE = #{rvrecode}
+  		
+  		</select>
+  		
+  		<select id="selectReviewList" resultType="com.spring.memberDto.ReviewDto" >
+  			select RVRECODE,RVMID,RVMVCODE,RVCOMMENT,TO_CHAR(RVDATE,'YYYY-MM-DD HH24:MI') AS RVDATE , RVRECOMMEND , M.MPROFILE
+			from REVIEW RV , MEMBERS M
+			where RV.RVMID = M.MID  AND RVMVCODE = #{mvcode}
+  			
+  		
+  		</select>
+  		
+  		<select id="getcommend" resultType="com.spring.memberDto.MovieDto" >
+  			Select *
+			from movies MV 
+			LEFT OUTER JOIN(SELECT GOODREVIEW.RVMVCODE, GOODREVIEW.GOODRECOMMEND, BADREVIEW.BADRECOMMEND
+                FROM (select RVMVCODE, COUNT(*) AS GOODRECOMMEND  FROM REVIEW  where RVRECOMMEND = 1 GROUP BY RVMVCODE) GOODREVIEW ,
+                    (select RVMVCODE , count(*) AS BADRECOMMEND FROM REVIEW  where RVRECOMMEND = 0 GROUP BY RVMVCODE ) BADREVIEW
+                WHERE GOODREVIEW.RVMVCODE = BADREVIEW.RVMVCODE ) REVIEWCOUNT
+			ON MV.MVCODE = REVIEWCOUNT.RVMVCODE
+			ORDER BY MVCODE
+  		
+  		
+  		</select>
+  		
+  		
+  		<select id="selectCountReservation" resultType="int">
+  			select count(*)
+  			from RESERVATION
+  		
+  		</select>
+  		
+  		<select id="selectMvReservation" resultType="int">
+  			select count(*)
+  			from RESERVATION RE, SCHEDULES SC
+  			where RE.RESCTHCODE = SC.SCTHCODE AND RE.RESCROOM = SC.SCROOM AND RE.RESCDATE = SC.SCDATE
+  					AND SCMVCODE = #{mvcode} 
+  		</select>
+  		
+  		<select id="searchMovie" resultType="com.spring.memberDto.MovieDto">
+  			select *
+  			from MOVIES
+  			where MVNAME LIKE '%'|| #{searchName} ||'%'  			
+  			
+  		</select>
+  		
+  		<select id="selectReMovie" resultType="com.spring.memberDto.MovieDto">
+  			select *
+  			from MOVIES
+  			where MVNAME LIKE '%'|| #{searchName} ||'%'  			
+  			and MVCODE in (select SCMVCODE from SCHEDULES where scdate > sysdate)
+  			
+  		</select>
+  		
+  </mapper>
